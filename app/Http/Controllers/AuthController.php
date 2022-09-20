@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\{JsonResponse, Request, Response};
 use App\Services\UserService;
-use App\Jobs\SendActiveEmail;
 
 class AuthController extends Controller
 {
@@ -35,9 +34,10 @@ class AuthController extends Controller
      */
     public function register() : JsonResponse
     {
-        $user = $this->userService->save($this->request->all());
-        dispatch(new SendActiveEmail($user));
-        return response()->json($user, Response::HTTP_CREATED);
+        $user = $this->userService->save(
+            $this->validate($this->request, $this->getCreateRules())
+        );
+        return response()->json($user);
     }
 
     /**
@@ -47,6 +47,34 @@ class AuthController extends Controller
      */
     public function login() : JsonResponse
     {
-        return response()->json($this->userService->login($this->request->all()), Response::HTTP_ACCEPTED);
+        return response()->json(
+            $this->userService->login($this->validate($this->request, $this->getLoginRules())));
+    }
+
+    /**
+     * Validation rules of register action
+     *
+     * @return array
+     */
+    public function getCreateRules() : array
+    {
+        return [
+            'name' => ['required', 'string'],
+            'email' => ['required', 'string', 'unique:users'],
+            'password' => 'required'
+        ];
+    }
+
+    /**
+     * Validation rules of login action
+     *
+     * @return array
+     */
+    public function getLoginRules() : array
+    {
+        return [
+            'email' => ['required', 'string'],
+            'password' => 'required'
+        ];
     }
 }

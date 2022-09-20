@@ -38,7 +38,7 @@ class TaskService
      */
     public function getById(int $id)
     {
-        return $this->task->findOrFail($id);
+        return $this->task->findOrFail($id)->load('user');
     }
 
     /**
@@ -50,7 +50,6 @@ class TaskService
      */
     public function update(array $data, int $id)
     {
-        $this->validateData($data);
         try {
             $task = $this->task->find($id);
             $task->title = $data['title'];
@@ -62,10 +61,9 @@ class TaskService
             $task->user()->sync($assignees);
         } catch (Exception $e) {
             Log::info($e->getMessage());
-            throw new InvalidArgumentException($e->getMessage());
         }
 
-        return $task;
+        return $task->load('user');
 
     }
 
@@ -77,7 +75,6 @@ class TaskService
      */
     public function save(array $data)
     {
-        $this->validateData($data);
         try {
             $task = new $this->task;
             $task->title = $data['title'];
@@ -92,10 +89,9 @@ class TaskService
             }
         } catch (Exception $e) {
             Log::info($e->getMessage());
-            throw new InvalidArgumentException($e->getMessage());
         }
 
-        return $task;
+        return $task->load('user');
     }
 
     /**
@@ -111,25 +107,6 @@ class TaskService
             $task->delete();
         } catch (Exception $e) {
             Log::info($e->getMessage());
-            throw new InvalidArgumentException($e->getMessage());
-        }
-    }
-
-    /**
-     * Validate data
-     *
-     * @param array $data
-     * @return void
-     */
-    protected function validateData(array $data)
-    {
-        $validator = Validator::make($data, [
-            'title' => 'required|string'
-        ]);
-
-        if ($validator->fails()) {
-            Log::info($validator->errors()->first());
-            throw new InvalidArgumentException($validator->errors()->first());
         }
     }
 }

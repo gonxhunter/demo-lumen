@@ -27,7 +27,6 @@ class UserController extends Controller
     ) {
         $this->request = $request;
         $this->userService = $taskService;
-        $this->middleware('auth');
     }
 
     /**
@@ -37,7 +36,7 @@ class UserController extends Controller
      */
     public function profile() : JsonResponse
     {
-        return response()->json(Auth::user(), Response::HTTP_OK);
+        return response()->json(Auth::user());
     }
 
     /**
@@ -45,19 +44,20 @@ class UserController extends Controller
      *
      * @return JsonResponse
      */
-    public function allUsers() : JsonResponse
+    public function list() : JsonResponse
     {
-        return response()->json($this->userService->getAll(), Response::HTTP_ACCEPTED);
+        return response()->json($this->userService->getAll());
     }
 
     /**
      * Get one User.
      *
+     * @param int $id
      * @return JsonResponse
      */
-    public function view($id) : JsonResponse
+    public function show(int $id) : JsonResponse
     {
         $user = $this->userService->getById($id);
-        return response()->json($user, Response::HTTP_ACCEPTED);
+        return response()->json($user);
     }
 }

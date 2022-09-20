@@ -28,9 +28,13 @@ class SendActiveEmail extends Job
     {
         $user = $this->user;
         //Send registered email here
-        Mail::to($user->email)
-            ->cc('peter.c@webprovise.com')
-            ->bcc('cody.t@webprovise.com')
-            ->send(new ActiveUserEmail($user));
+        try {
+            Mail::to($user->email)
+                ->cc(env('MAIL_CC_ADDRESS'))
+                ->bcc(env('MAIL_BCC_ADDRESS'))
+                ->send(new ActiveUserEmail($user));
+        } catch (\Exception $e) {
+            Log::info($e->getMessage());
+        }
     }
 }

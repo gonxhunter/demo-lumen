@@ -15,14 +15,4 @@ class Task extends Model
     {
         return $this->belongsToMany(User::class);
     }
-
-    public function getTaskById($id)
-    {
-        if ($id) {
-            if ($task = $this->find($id)) {
-                return $task->title;
-            }
-        }
-        return '';
-    }
 }

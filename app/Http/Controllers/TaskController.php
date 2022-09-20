@@ -26,7 +26,6 @@ class TaskController extends Controller
     ) {
         $this->request = $request;
         $this->taskService = $taskService;
-        $this->middleware('auth');
     }
 
     /**
@@ -34,10 +33,10 @@ class TaskController extends Controller
      *
      * @return JsonResponse
      */
-    public function allTasks() : JsonResponse
+    public function list() : JsonResponse
     {
         $tasks = $this->taskService->getAll();
-        return response()->json($tasks, Response::HTTP_ACCEPTED);
+        return response()->json($tasks);
     }
 
     /**
@@ -47,9 +46,11 @@ class TaskController extends Controller
      */
     public function create() : JsonResponse
     {
-        $task = $this->taskService->save($this->request->all());
-        $task->load('user');
-        return response()->json($task, Response::HTTP_CREATED);
+        return response()->json(
+            $this->taskService->save(
+                $this->validate($this->request, $this->getCreateRules())
+            )
+        );
     }
 
     /**
@@ -60,9 +61,12 @@ class TaskController extends Controller
      */
     public function update(int $id) : JsonResponse
     {
-        $task = $this->taskService->update($this->request->all(), $id);
-        $task->load('user');
-        return response()->json($task, Response::HTTP_ACCEPTED);
+        return response()->json(
+            $this->taskService->update(
+                $this->validate($this->request, $this->getCreateRules()),
+                $id
+            )
+        );
     }
 
     /**
@@ -82,10 +86,24 @@ class TaskController extends Controller
      *
      * @return JsonResponse
      */
-    public function view(int $id) : JsonResponse
+    public function show(int $id) : JsonResponse
     {
-        $task = $this->taskService->getById($id);
-        $task->load('user');
-        return response()->json($task, Response::HTTP_ACCEPTED);
+        return response()->json($this->taskService->getById($id));
+    }
+
+    /**
+     * Validation rules of create action
+     *
+     * @return array
+     */
+    public function getCreateRules() : array
+    {
+        return [
+            'title' =>['required', 'string'],
+            'description' => ['nullable', 'string', 'max:2000'],
+            'due_date' => 'nullable',
+            'parent_task' => 'nullable',
+            'assignee' => 'nullable'
+        ];
     }
 }

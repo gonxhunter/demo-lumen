@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\SendActiveEmail;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -52,7 +53,6 @@ class UserService
      */
     public function update(array $data, int $id)
     {
-        $this->validateUser($data);
         try {
             $user = $this->user->find($id);
             $user->name = $data['name'];
@@ -62,7 +62,6 @@ class UserService
             $user->update();
         } catch (Exception $e) {
             Log::info($e->getMessage());
-            throw new InvalidArgumentException($e->getMessage());
         }
 
         return $user;
@@ -77,19 +76,17 @@ class UserService
      */
     public function save(array $data)
     {
-        $this->validateUser($data);
-        try {
-            $user = new $this->user;
-            $user->name = $data['name'];
-            $user->email = $data['email'];
-            $password = $data['password'];
-            $user->password = app('hash')->make($password);
-            $user->save();
-        } catch (Exception $e) {
-            Log::info($e->getMessage());
-            throw new InvalidArgumentException($e->getMessage());
-        }
+        $user = new $this->user;
+        $user->name = $data['name'];
+        $user->email = $data['email'];
+        $password = $data['password'];
+        $user->password = app('hash')->make($password);
+        $user->save();
 
+        //Send email when register successfully
+        if ($user->id) {
+            dispatch(new SendActiveEmail($user));
+        }
         return $user;
     }
 
@@ -99,38 +96,21 @@ class UserService
      */
     public function login(array $data)
     {
-        //validate data
-        $validator = Validator::make($data, [
-            'email' => 'required|email',
-            'password' => 'required'
-        ]);
-
-        if ($validator->fails()) {
-            Log::info($validator->errors()->first());
-            throw new InvalidArgumentException($validator->errors()->first());
-        }
-        //end validate
-
-        $input = [
-            'email' => $data['email'],
-            'password' => $data['password']
-        ];
-        if (!$authorized = Auth::attempt($input)) {
+        if (!$authorized = Auth::attempt($data)) {
             $code = 404;
-            $output = [
-                'code' => $code,
-                'message' => 'User is not authorized'
-            ];
+            $message = 'User is not authorized';
+            $token = '';
         } else {
             $token = $this->respondWithToken($authorized);
             $code = 200;
-            $output = [
-                'code' => $code,
-                'message' => 'User logged in successfully.',
-                'token' => $token
-            ];
+            $message = 'User logged in successfully.';
         }
-        return $output;
+
+        return [
+            'code' => $code,
+            'message' => $message,
+            'token' => $token
+        ];
     }
 
     /**
@@ -146,27 +126,6 @@ class UserService
             $user->delete();
         } catch (Exception $e) {
             Log::info($e->getMessage());
-            throw new InvalidArgumentException($e->getMessage());
-        }
-    }
-
-    /**
-     * Validate data
-     *
-     * @param array $data
-     * @return void
-     */
-    protected function validateUser(array $data)
-    {
-        $validator = Validator::make($data, [
-            'name' => 'required|string',
-            'email' => 'required|email|unique:users',
-            'password' => 'required'
-        ]);
-
-        if ($validator->fails()) {
-            Log::info($validator->errors()->first());
-            throw new InvalidArgumentException($validator->errors()->first());
         }
     }
 

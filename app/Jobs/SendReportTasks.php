@@ -2,9 +2,7 @@
 
 namespace App\Jobs;
 
-use App\Models\Task;
 use Illuminate\Support\Facades\Log;
-use App\Services\TaskService;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\ReportTaskEmail;
@@ -30,12 +28,16 @@ class SendReportTasks extends Job
         $users = User::all();
         foreach ($users as $user) {
             $overDueDateTasks = $user->task()->where('due_date', '<', date('Y-m-d'))->get();
-            if ($number = $overDueDateTasks->count()) {
+            if ($overDueDateTasks->count() > 0) {
                 // Send email if user has overdue date task
-                Mail::to($user->email)
-                    ->cc('peter.c@webprovise.com')
-                    ->bcc('cody.t@webprovise.com')
-                    ->send(new ReportTaskEmail($overDueDateTasks));
+                try {
+                    Mail::to($user->email)
+                        ->cc(env('MAIL_CC_ADDRESS'))
+                        ->bcc(env('MAIL_BCC_ADDRESS'))
+                        ->send(new ReportTaskEmail($overDueDateTasks));
+                } catch (\Exception $e) {
+                    Log::info($e->getMessage());
+                }
             }
         }
     }

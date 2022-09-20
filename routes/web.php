@@ -24,28 +24,19 @@ $router->group(['prefix' => 'api'], function () use ($router) {
     // Matches "/api/login
     $router->post('login', 'AuthController@login');
 
-    // Matches "/api/profile
-    $router->get('profile', 'UserController@profile');
-
-    // Matches "/api/users/1
-    //get one user by id
-    $router->get('users/{id}', 'UserController@view');
-
     // Matches "/api/users
-    $router->get('users', 'UserController@allUsers');
+    $router->group(['middleware' => 'auth', 'prefix' => 'users'], function () use ($router) {
+        $router->get('/', 'UserController@list');
+        $router->get('show/{id}', 'UserController@show');
+        $router->get('profile', 'UserController@profile');
+    });
 
     // Matches "/api/tasks
-    $router->get('tasks', 'TaskController@allTasks');
-
-    // Matches "/api/tasks/create
-    $router->post('tasks/create', 'TaskController@create');
-
-    // Matches "/api/tasks/1
-    $router->put('tasks/{id}', 'TaskController@update');
-
-    // Matches "/api/tasks/1
-    $router->get('tasks/{id}', 'TaskController@view');
-
-    // Matches "/api/tasks/delete/1
-    $router->delete('tasks/delete/{id}', 'TaskController@delete');
+    $router->group(['middleware' => 'auth', 'prefix' => 'tasks'], function () use ($router) {
+        $router->get('/', 'TaskController@list');
+        $router->get('/{id}', 'TaskController@show');
+        $router->post('create', 'TaskController@create');
+        $router->put('/{id}', 'TaskController@update');
+        $router->delete('delete/{id}', 'TaskController@delete');
+    });
 });
